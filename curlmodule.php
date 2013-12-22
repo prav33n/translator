@@ -1,9 +1,22 @@
 <?php
 require 'depthget.php';
 set_time_limit (0);
-var_dump($argv);
+if(count($argv)==5){
+$engine = $argv[1] ;
+$input= $argv[2];
+$output = $argv[3];
+$sourcelang = $argv[4];
+$targetlang = $argv[5];
+}
+else {
+$input= $argv[1];
+$output = $argv[2];
+$sourcelang = $argv[3];
+$targetlang = $argv[4];
+}
+echo $engine,"\n",$input,"\n",$output,"\n",$sourcelang,"\n",$targetlang;
 echo "Translating......";
-getfilelist();
+//getfilelist();
 echo "Translation Complete";
 
 function getfilelist(){
