@@ -45,7 +45,7 @@ function readinputfile($engine,$input,$output,$sourcelang,$targetlang)
 				$query = $query. " | ".trim($content);
 				$i++;
 				if($i%50 == 0 && $i!=0){
-					$url = "http://api.microsofttranslator.com/v2/ajax.svc/TranslateArray?appId=%22".$apikey."%22&texts=[%22".urlencode($query)."%22]&from=%22en%22&to=%22zh-chs%22";
+					$url = "http://api.microsofttranslator.com/v2/ajax.svc/TranslateArray?appId=%22".$apikey."%22&texts=[%22".urlencode($query)."%22]&from=%22".$sourcelang."%22&to=%22".$targetlang."%22";
 					dataext($url,false,$i,"bing",$output);
 					$query = "";
 				}
@@ -66,7 +66,7 @@ function readinputfile($engine,$input,$output,$sourcelang,$targetlang)
 			$content = fgets($fp);
 			if($content != ""){
 				$query = $query. " \n ".trim($content);
-				$url = "http://translate.google.com/translate_a/t?client=t&sl=en&tl=zh-CN&hl=en&ie=UTF-8&oe=UTF-8&prev=btn&rom=1&ssel=0&tsel=0";
+				$url = "http://translate.google.com/translate_a/t?client=t&sl=".$sourcelang."&tl=".$targetlang."&hl=en&ie=UTF-8&oe=UTF-8&prev=btn&rom=1&ssel=0&tsel=0";
 				$i++;
 				if($i%50 == 0 && $i!=0){
 					depthnav($url, false,0,"google", $output, "q=".urlencode($query));
