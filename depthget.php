@@ -1,7 +1,6 @@
 <?php
 $count = 0;
-function dataext($url,$cookie,$id,$engine,$outputfile)
-{
+function dataext ($url, $cookie, $id, $engine, $fout) {
 	$cookie_jar = getcwd ()."\cookie.txt";
 	//$cookie_jar = "..\\cookie.txt";
 	if($cookie){
@@ -46,43 +45,34 @@ function dataext($url,$cookie,$id,$engine,$outputfile)
 		);
 	}
 
-
 	$ch      = curl_init($url);
 	curl_setopt_array( $ch, $options );
 	$content = curl_exec( $ch );
 	$err     = curl_errno( $ch );
 	$errmsg  = curl_error( $ch );
 	$header  = curl_getinfo( $ch );
-	if($engine == "apikey"){
-		//var_dump($content);
+	if ($engine == "apikey"){
 		$found = preg_match ('/Default\.Constants\.AjaxApiAppId\s*=\s*\'(.*?)\'\s*;/is', $content, $r);
 		if ($found) {
 			$sessionid = trim($r[1]);
-			return($sessionid);
+			return ($sessionid);
 		}
-		
 	}
-
-	else if($engine == "bing"){
-		$fp = fopen($outputfile, 'a+') or die("Could not create file!");
+	else if ($engine == "bing"){
 		$replace = preg_replace('/(﻿)/', '', $content);
 		$json = json_decode($replace,FALSE);
 		$translatearray = explode("|",$json[0]->TranslatedText);
-		var_dump($translatearray,count($translatearray));
 		foreach ($translatearray as $value) {
-			if($value!=""){
-				fwrite($fp, $value."\n");
+			if ($value != ""){
+				fwrite ($fout, $value."\n");
 			}
 		}
-		fclose($fp);
 	}
 	elseif($engine == "google"){
-		$fp = fopen($outputfile, 'a+') or die("Could not create file!");
-		fwrite($fp, $id." ;");
+		fwrite ($fout, $id." ;");
 		$nMatches = preg_split('/[\[\]]/', $content);
 		$matches = preg_split('/[""]/', $nMatches[3]);
-		fwrite($fp,"\t".$matches[1]."\n");
-		fclose($fp);
+		fwrite ($fout,"\t".$matches[1]."\n");
 	}
 	curl_close( $ch );
 	//$json =    json_decode(json_encode($content));

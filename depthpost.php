@@ -1,5 +1,5 @@
 <?php
-function depthnav($url,$cookie,$id,$engine,$outputfile,$postdata)
+function depthnav ($url, $cookie, $id, $engine, $fout, $postdata)
 {
 	$cookie_jar = getcwd ()."\cookie.txt";
     $options = array(       
@@ -19,7 +19,8 @@ function depthnav($url,$cookie,$id,$engine,$outputfile,$postdata)
 	CURLOPT_SSL_VERIFYHOST => false,
 	CURLOPT_POST => true,  			//indicate to use post method
 	CURLOPT_POSTFIELDS =>$postdata, 
-	CURLOPT_HTTPHEADER => array('Content-Type: application/x-www-form-urlencoded;charset=UTF-8')
+	CURLOPT_HTTPHEADER => array('Content-Type: application/x-www-form-urlencoded;charset=UTF-8'),
+	//CURLOPT_PROXY => "103.249.240.53:8080",
 	);    
 	$ch      = curl_init($url);   
 	curl_setopt_array( $ch, $options );    
@@ -30,24 +31,22 @@ function depthnav($url,$cookie,$id,$engine,$outputfile,$postdata)
 	$header['errno']   = $err;    
 	$header['errmsg']  = $errmsg;    
 	$header['content'] = $content;
-	$fp = fopen($outputfile, 'a+') or die("Could not create file!");
-	$found = preg_match ('/(\[\[).*(\]\])/', $content, $r);
-	$found = preg_split('/^[\s\S]{0,1}/', $r[0]);
-	$json = json_decode($found[1]);
+	//var_dump($postdata);
+	//var_dump($content);	
+//preg_match('/└ (.*?)┘/u', $content, $temp);
+//$result = '[["'.$temp[0].'"]]';
+	//$json = json_decode($content) or die("not valid json format");
+	$found = preg_match ('/(\[\[).*(\]\]\,\,)/', $content, $r);
+	$found = preg_match ('/(\[\[).*(\]\])/', $r[0],$new);
+	$found = preg_split('/^[\s\S]{0,1}/', $new[0]);
+	$json = json_decode($found[1]) or die("not valid json format");
+	var_dump($found[1]);
 	foreach ($json as $value){
-		var_dump($value);
-			if($value[0]!=""){
-				fwrite($fp, $value[0]);
-			}
+		if ($value[0] != "") {
+			fwrite ($fout, $value[0]);
+		}
 	}
-	fclose($fp);
-	//$matches = preg_split('/(\]\])/', $nMatches[1]);
-	//var_dump($matches);
-	//fwrite($fp,"\t".$matches[1]."\n");
-	//fclose($fp);
+	fwrite ($fout,"\n");
 	curl_close( $ch ); 
 }
-
-
-
 ?>
