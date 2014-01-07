@@ -20,7 +20,8 @@ function dataext ($url, $cookie, $id, $engine, $fout) {
 		CURLOPT_SSL_VERIFYPEER => false,
 		CURLOPT_SSL_VERIFYHOST => false,
 		CURLOPT_COOKIE => "",
-		CURLOPT_HTTPAUTH=>CURLAUTH_BASIC
+		CURLOPT_HTTPAUTH=>CURLAUTH_BASIC,
+		//		CURLOPT_PROXY => "103.249.240.53:8080",
 		);
 	}
 	else{
@@ -42,6 +43,7 @@ function dataext ($url, $cookie, $id, $engine, $fout) {
 		CURLOPT_SSL_VERIFYHOST => false,
 		CURLOPT_COOKIE => "",
 		CURLOPT_HTTPAUTH=>CURLAUTH_BASIC,
+		//		CURLOPT_PROXY => "103.249.240.53:8080",
 		);
 	}
 
@@ -59,20 +61,45 @@ function dataext ($url, $cookie, $id, $engine, $fout) {
 		}
 	}
 	else if ($engine == "bing"){
-		$replace = preg_replace('/(﻿)/', '', $content);
-		$json = json_decode($replace,FALSE);
-		$translatearray = explode("|",$json[0]->TranslatedText);
-		foreach ($translatearray as $value) {
-			if ($value != ""){
-				fwrite ($fout, $value."\n");
+		if (0) {
+			$replace = preg_replace('/(﻿)/', '', $content);
+			$json = json_decode($replace,FALSE);
+			$translatearray = explode("|",$json[0]->TranslatedText);
+			foreach ($translatearray as $value) {
+				if ($value != ""){
+					fwrite ($fout, $value."\n");
+				}
 			}
+		}
+		else {
+			fwrite ($fout, $content."\n");
 		}
 	}
 	elseif($engine == "google"){
-		fwrite ($fout, $id." ;");
-		$nMatches = preg_split('/[\[\]]/', $content);
-		$matches = preg_split('/[""]/', $nMatches[3]);
-		fwrite ($fout,"\t".$matches[1]."\n");
+		/*if (0) {
+		 fwrite ($fout, $id." ;");
+		 $nMatches = preg_split('/[\[\]]/', $content);
+		 $matches = preg_split('/[""]/', $nMatches[3]);
+		 fwrite ($fout,"\t".$matches[1]."\n");
+		 }
+		 else {
+		 fwrite ($fout, $content."\n");
+		 }	*/
+		if (0) {
+			$found = preg_match ('/(\[\[).*(\]\]\,\,)/', $content, $r);
+			$found = preg_match ('/(\[\[).*(\]\])/', $r[0],$new);
+			$found = preg_split('/^[\s\S]{0,1}/', $new[0]);
+			$json = json_decode($found[1]);
+			foreach ($json as $value){
+				if ($value[0] != "") {
+					fwrite ($fout, $value[0]);
+				}
+			}
+			fwrite ($fout, "\n");
+		}
+		else {
+			fwrite ($fout, $content."\n");
+		}
 	}
 	curl_close( $ch );
 	//$json =    json_decode(json_encode($content));
