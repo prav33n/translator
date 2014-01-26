@@ -4,6 +4,8 @@ require_once('depthpost.php');
 
 function TranslateBulk ($engine, $blocksize, $inputfilename, $outputfilename, $sourcelang, $targetlang, $batchstart, $batchend) {
 echo "Translating......\n";
+	if (file_exists ("cookie.txt"))
+		unlink("cookie.txt");
 	$fout = fopen($outputfilename, 'w') or die("Could not create output file!");
 	if ($engine == "bing") {
 		$fp = fopen($inputfilename, 'r') or die("Could not open input file!");
@@ -54,7 +56,7 @@ echo "Translating......\n";
 		fclose($fp);
 	}
 	if ($engine == "google") {
-		dataext ("http://translate.google.com/", true, 0, "cookie", NULL);
+//		dataext ("http://translate.google.com/", true, 0, "cookie", NULL);
 		$fp = fopen($inputfilename, 'r') or die("Could not create file!");
 		$query = "";
 		$url = null;
@@ -84,25 +86,19 @@ echo "Translating......\n";
 			$text = trim($content[2]);
 			if (!empty($query))
 				$query .= " \n ";
-			$query .= $id." ;; ".$text."|";
+			$query .= $id." ;; ".$text;
 			if ($nline % $blocksize == 0 && $nline != 0){
-				var_dump(count($query));
-				$url = 'https://www.googleapis.com/language/translate/v2?key=AIzaSyAScG4vpDM8iAcMyhKEzWf0xfaV3pV6ZFY&q=' . rawurlencode($query) . '&source='.$sourcelang.'&target='.$targetlang;
-			//	$url = "http://translate.google.com/translate_a/t?client=t&sl=".$sourcelang."&tl=".$targetlang."&hl=en&ie=UTF-8&oe=UTF-8&prev=btn&rom=1&ssel=0&tsel=0";
-				var_dump($url);
-				//depthnav ($url, false, 0, "google", $fout, "q=".urlencode($query));
-				dataext ($url, false, $nline, "google", $fout);
-//				sleep(2);
-				sleep(10);
+				$url = "http://translate.google.com/translate_a/t?client=t&sl=".$sourcelang."&tl=".$targetlang."&hl=en&ie=UTF-8&oe=UTF-8&prev=btn&rom=1&ssel=0&tsel=0";
+				dataext ("http://translate.google.com/", true, 0, "cookie", NULL);
+				depthnav ($url, false, 0, "google", $fout, "q=".urlencode($query));
+				sleep(2);
+//				sleep(10);
 				$query = "";
-				//break;
 			}
 		}
 		if (!empty($query)) {
-			$url = 'https://www.googleapis.com/language/translate/v2?key=AIzaSyAScG4vpDM8iAcMyhKEzWf0xfaV3pV6ZFY&q=' . rawurlencode($query) . '&source='.$sourcelang.'&target='.$targetlang;
-			dataext ($url, false, $nline, "google", $fout);
-			//$url = "http://translate.google.com/translate_a/t?client=t&sl=".$sourcelang."&tl=".$targetlang."&hl=en&ie=UTF-8&oe=UTF-8&prev=btn&rom=1&ssel=0&tsel=0";
-			//depthnav ($url, false, 0, "google", $fout, "q=".urlencode($query));
+			$url = "http://translate.google.com/translate_a/t?client=t&sl=".$sourcelang."&tl=".$targetlang."&hl=en&ie=UTF-8&oe=UTF-8&prev=btn&rom=1&ssel=0&tsel=0";
+			depthnav ($url, false, 0, "google", $fout, "q=".urlencode($query));
 		}
 		fclose($fp);	
 	}
@@ -113,9 +109,11 @@ echo "Translation Complete\n";
 function ExtractBT ($infilename, $resfilename) {
 	$content = file_get_contents ($infilename);
 	$fr = fopen ($resfilename, 'w');
-	$nmatches = preg_match_all ('/\"TranslatedText\"\:\"([^\"]*?)\"\s*,\s*\"TranslatedTextSentenceLengths\"/uis', $content, $matches, PREG_SET_ORDER);
+//	$nmatches = preg_match_all ('/\"TranslatedText\"\:\"([^\"]*?)\"\s*,\s*\"TranslatedTextSentenceLengths\"/uis', $content, $matches, PREG_SET_ORDER);
+	$nmatches = preg_match_all ('/\"TranslatedText\"\s*\:(.*?)\"TranslatedTextSentenceLengths\"/uis', $content, $matches, PREG_SET_ORDER);
 	foreach ($matches as $m) {
 		$scope = $m[1]."|";
+		$scope = trim(preg_replace('/[\\\"]/', '', $scope));
 		$nmatches1 = preg_match_all ('/([^\"]*?)\|/uis', $scope, $matches1, PREG_SET_ORDER);
 		foreach ($matches1 as $m1) {
 			$line = $m1[1];
@@ -151,6 +149,53 @@ function ExtractGT ($infilename, $resfilename) {
 	fclose ($fr);
 }
 
+function CollectGoogleSERP ($inputfilename, $outputfilename, $batchstart, $batchend) {
+echo "Collecting......\n";
+	if (file_exists ("cookie.txt"))
+		unlink("cookie.txt");
+	dataext ("http://www.google.com/", true, 0, "cookie", NULL);
+	$fout = fopen($outputfilename, 'w') or die("Could not create output file!");
+	$fp = fopen($inputfilename, 'r') or die("Could not create file!");
+	$query = "";
+	$url = null;
+	$nline = -1;
+	while (!feof($fp)){
+		$nline ++;
+		$line = fgets($fp);
+		if ($nline < $batchstart)
+			continue;
+		if ($nline >= $batchend)
+			break;
+		$line = trim(preg_replace('/；/', ';', $line));
+		$found = preg_match('/(\w+)\s*;\s*;/', $line, $r);
+		if (!$found) {
+			$line = trim(preg_replace('/;/', ';;', $line));
+			$found = preg_match('/(\w+)\s*;\s*;(.*?)$/is', $line, $r);
+			if (!$found) {
+				$found = preg_match('/(\w+)\s*(.*?)$/is', $line, $r);
+				if ($found)
+					$line = $r[1].";;".$r[2];
+			}		
+		}	
+		if (empty($line))
+			continue;
+		$content = preg_split('/;/', $line);
+		$id = trim($content[0]);
+		$text = trim($content[2]);
+		$query = $id." ;; ".$text;
+		var_dump($text);
+// to be modified !!!!!!		
+		$url = "https://www.google.com/search?q=".urlencode($text);
+		echo $url;
+		dataext ($url, false, 0, "google", $fout);
+		sleep(2);
+//		break;
+	}
+	fclose($fp);	
+	fclose ($fout);
+echo "Collecting Complete\n";
+}
+
 function main() {
 // main function
 	
@@ -167,6 +212,10 @@ set_time_limit (0);
 		ExtractBT ($cfg['infilename'], $cfg['resfilename']);
 	if ($action == "extract_gt")
 		ExtractGT ($cfg['infilename'], $cfg['resfilename']);
+	if ($action == "translate_bulk")
+		TranslateBulk ($cfg['engine'], $cfg['bulksize'], $cfg['infilename'], $cfg['resfilename'], $cfg['langfrom'], $cfg['langto'], $cfg['batchstart'], $cfg['batchend']);
+	if ($action == "collect_google_serp")
+		CollectGoogleSERP ($cfg['infilename'], $cfg['resfilename'], $cfg['batchstart'], $cfg['batchend']);
 }
 
 $cfg = array();
@@ -202,6 +251,17 @@ if ($cfg['action'] == "extract_gt") {
 		die ("Usage: php -f Translate.php extract_gt <infilename> <resfilename>");
 	}
 }
+if ($cfg['action'] == "collect_google_serp") {
+	$cfg['infilename'] 	= $argv[2];
+	$cfg['resfilename'] = $argv[3];
+	$cfg['batchstart'] 	= $argv[4];
+	$cfg['batchend'] 	= $argv[5];
+	if ($argc != 6) {
+		print ("Translate\n");
+		die ("Usage: php -f Translate.php collect_google_SERP <infilename> <resfilename> <batchstart> <batchend>");
+	}
+}
+
 
 main();
 

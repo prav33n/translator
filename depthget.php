@@ -98,7 +98,7 @@ function dataext ($url, $cookie, $id, $engine, $fout) {
 			fwrite ($fout, "\n");
 		}
 		else {
-			fwrite ($fout, $content."\n");
+			fwrite ($fout, html_entity_decode($content,ENT_COMPAT,'UTF-8')."\n");
 		}
 	}
 	curl_close( $ch );
